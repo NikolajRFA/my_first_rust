@@ -1,14 +1,21 @@
 use rusqlite::{params, Connection};
-use std::io;
+use std::{io, process};
 
 fn main() {
+    // Print instructions.
+    println!(); // Console spacing.
     println!("What's your name and age? (Seperated by';')");
     println!("You can enter multiple persons by seperating with ','!");
+    println!("\nExit the program by typing 'exit'");
 
-    let mut name_age_in = String::new();
-    io::stdin().read_line(&mut name_age_in).expect("Failed to read line");
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).expect("Failed to read line");
 
-    let name_age: Vec<&str> = name_age_in.trim().split(";").collect();
+    if input.trim().eq(&String::from("exit")) {
+        process::exit(0);
+    }
+
+    let name_age: Vec<&str> = input.trim().split(";").collect();
 
     let name = name_age[0].trim();
     let age = name_age[1].trim();
@@ -26,8 +33,7 @@ fn main() {
                     age             INTEGER NULL
                     )",
             params![],
-        )
-        .unwrap();
+        ).unwrap();
     }
 
     conn.execute(
@@ -41,7 +47,7 @@ fn main() {
             row.get(0)
         }).unwrap();
 
-    println!("The name you entered was: {}", selected_name);
+    println!("{} has been added!", selected_name);
 }
 
 fn table_exists(name: &str, conn: &Connection) -> bool {
