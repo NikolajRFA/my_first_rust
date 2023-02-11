@@ -24,11 +24,13 @@ fn main() {
 
         let name = name_age[0].trim();
         let age = name_age[1].trim();
+        let age_int: i8 = age.parse().unwrap();
 
         println!("Hello, {}!", name);
 
         let conn = Connection::open("name_database.db").unwrap();
 
+        // Check if Persons table exists
         if !table_exists("Persons", &conn) {
             // Create Persons table.
             conn.execute(
@@ -42,11 +44,8 @@ fn main() {
             .unwrap();
         }
 
-        conn.execute(
-            "INSERT INTO Persons (name, age) VALUES (?1, ?2)",
-            params![name, age],
-        )
-        .unwrap();
+        // Insert person into table.
+        insert_person(&conn, name, age_int);
 
         let selected_name: String = conn
             .query_row(
@@ -66,4 +65,16 @@ fn table_exists(name: &str, conn: &Connection) -> bool {
     return conn
         .query_row(sql, params![name], |row| row.get(0))
         .unwrap();
+}
+
+fn insert_person(conn: &Connection, name: &str, age: i8) -> bool {
+    let sql: &str = "INSERT INTO Persons (name, age) VALUES (?1, ?2)";
+
+    match conn.execute(sql, params![name, age]) {
+        Ok(_) => return true,
+        Err(err) => {
+            println!("Insert failed!\nError msg: {}", err);
+            return false;
+        }
+    }
 }
