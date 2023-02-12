@@ -1,5 +1,5 @@
 use rusqlite::{params, Connection};
-use std::{io, process};
+use std::{io, process, /*io::Result*/};
 
 fn main() {
     // Print instructions.
@@ -9,11 +9,16 @@ fn main() {
     println!("\nExit the program by typing 'exit'");
 
     let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
+    io::stdin().read_line(&mut input).expect("Failed to read line");
 
+    // Exit program.
     if input.trim().eq(&String::from("exit")) {
+        process::exit(0);
+    }
+
+    // Print persons table.
+    if input.trim().eq(&String::from("print persons")) {
+        print_persons_table(&Connection::open("name_database.db").unwrap()).unwrap();
         process::exit(0);
     }
 
@@ -24,9 +29,7 @@ fn main() {
 
         let name = name_age[0].trim();
         let age = name_age[1].trim();
-        let age_int: i8 = age.parse().unwrap();
-
-        println!("Hello, {}!", name);
+        let age_int: i16 = age.parse().unwrap();
 
         let conn = Connection::open("name_database.db").unwrap();
 
@@ -45,17 +48,11 @@ fn main() {
         }
 
         // Insert person into table.
-        insert_person(&conn, name, age_int);
-
-        let selected_name: String = conn
-            .query_row(
-                "SELECT name FROM Persons WHERE id = (SELECT MAX(id) FROM Persons)",
-                params![],
-                |row| row.get(0),
-            )
-            .unwrap();
-
-        println!("{} has been added!", selected_name);
+        if insert_person(&conn, name, age_int) {
+            println!("{} was inserted!", name);
+        } else {
+            println!("Something went wrong while inserting {}!", name);
+        }
     }
 }
 
@@ -67,7 +64,7 @@ fn table_exists(name: &str, conn: &Connection) -> bool {
         .unwrap();
 }
 
-fn insert_person(conn: &Connection, name: &str, age: i8) -> bool {
+fn insert_person(conn: &Connection, name: &str, age: i16) -> bool {
     let sql: &str = "INSERT INTO Persons (name, age) VALUES (?1, ?2)";
 
     match conn.execute(sql, params![name, age]) {
@@ -77,4 +74,27 @@ fn insert_person(conn: &Connection, name: &str, age: i8) -> bool {
             return false;
         }
     }
+}
+
+fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
+    let query = "PRAGMA table_info(Persons)";
+    let mut stmt = conn.prepare(query)?;
+    let row_iter = stmt.query_map(params![], |row| {
+        let name = row.get_ref::<&str>("name")?.as_str()?;
+        let name = name.to_owned();
+        Ok(name)
+    })?;
+
+    for row in row_iter {
+        match row {
+            Ok(name) => {
+                print!("{} ", name);
+            }
+            Err(e) => {
+                println!("Error in retrieving data from row: {}", e);
+            }
+        }
+    }
+
+    return Ok(());
 }
