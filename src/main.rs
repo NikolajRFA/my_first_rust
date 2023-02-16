@@ -79,21 +79,29 @@ fn insert_person(conn: &Connection, name: &str, age: i16) -> bool {
 fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
     let query = "PRAGMA table_info(Persons)";
     let mut stmt = conn.prepare(query)?;
+
     let row_iter = stmt.query_map(params![], |row| {
         let name = row.get_ref::<&str>("name")?.as_str()?;
         let name = name.to_owned();
         Ok(name)
     })?;
 
+    // Create vector of column names.
+    
+    let mut col_names = Vec::new();
     for row in row_iter {
         match row {
             Ok(name) => {
-                print!("{} ", name);
+                col_names.push(name);
             }
             Err(e) => {
-                println!("Error in retrieving data from row: {}", e);
+                eprintln!("Error in retrieving data from row: {}", e);
             }
         }
+    }
+
+    for col_name in col_names {
+        print!("{:<6}|", col_name);
     }
 
     return Ok(());
