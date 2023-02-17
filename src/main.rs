@@ -100,6 +100,8 @@ fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
         }
     }
 
+    let header_string
+
     for col_name in col_names {
         print!("{:<6}|", col_name);
     }
