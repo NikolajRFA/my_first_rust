@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, types::{Type}};
 use std::{io, process, env};
 
 fn main() {
@@ -84,7 +84,7 @@ fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
     let mut pragma_stmt = conn.prepare(pragma_query)?;
 
     let pragma_row_iter = pragma_stmt.query_map(params![], |row| {
-        let name = row.get_ref::<&str>("name")?.as_str()?;
+        let name = row.get_ref("name")?.as_str()?;
         let name = name.to_owned();
         Ok(name)
     })?;
@@ -111,7 +111,12 @@ fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
                 rusqlite::types::ValueRef::Null => 0,
                 value_ref => value_ref.as_i64()?,
             };
-            max_lenghts_internal.push(length);
+            if length >= col_names[i].len().try_into().unwrap() {
+                max_lenghts_internal.push(length);
+            } else {
+                max_lenghts_internal.push(col_names[i].len().try_into().unwrap());
+            }
+            
         }
         Ok(max_lenghts_internal)
     })?;
@@ -122,10 +127,38 @@ fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
 
     // Query data rows
     let mut data_rows = data_stmt.query(params![])?;
-    let mut table_content: String;
+    // Initialize content String.
+    let mut table_content = String::from("");
     // Iterate over the data rows.
     while let Some(row) = data_rows.next()? {
+        // Initialize a vector for the content of the row.
+        let mut row_content = Vec::new();
 
+        // Iterate over the columns of the row.
+        for col in 0..col_names.len() {
+
+            let value_ref = row.get_ref(col)?;
+            let data_type = value_ref.data_type();
+            // Match datatype.
+            let col_value = match data_type {
+                Type::Null => 
+                    format!("{:<width$}", "NULL", width=max_lenghts[col] as usize).as_str().to_owned(),
+                Type::Integer => 
+                    format!("{:<width$}", value_ref.as_i64()?, width=max_lenghts[col] as usize).as_str().to_owned(),
+                Type::Real => 
+                    format!("{:<width$}", value_ref.as_f64()?, width=max_lenghts[col] as usize).as_str().to_owned(),
+                Type::Text => 
+                    format!("{:<width$}", value_ref.as_str()?, width=max_lenghts[col] as usize).as_str().to_owned(),
+                Type::Blob => 
+                    format!("{:<width$?}", value_ref.as_blob()?, width=max_lenghts[col] as usize).as_str().to_owned()
+            };
+            // Push column value to row_content vector
+            row_content.push(col_value);
+        }
+        // Join row_content
+        table_content.push_str(&row_content.join(" | "));
+        // Push breakline.
+        table_content.push_str("\n");
     }
 
     // OUTPUT:
@@ -139,6 +172,8 @@ fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
     println!("{}", header_string);
     // Print line.
     println!("{:-<width$}", "-", width=header_string.len());
+    // Print table_content
+    println!("{}", table_content);
 
     return Ok(());
 }
