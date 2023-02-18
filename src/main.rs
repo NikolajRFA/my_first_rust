@@ -1,7 +1,8 @@
 use rusqlite::{params, Connection};
-use std::{io, process, /*io::Result*/};
+use std::{io, process, env};
 
 fn main() {
+    env::set_var("RUST_BACKTRACE", "1");
     // Print instructions.
     println!(); // Console spacing.
     println!("What's your name and age? (Seperated by';')");
@@ -77,19 +78,20 @@ fn insert_person(conn: &Connection, name: &str, age: i16) -> bool {
 }
 
 fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
-    let query = "PRAGMA table_info(Persons)";
-    let mut stmt = conn.prepare(query)?;
+    // TODO: Once done do abstraction of function to be generic.
+    // Query pragma table info.
+    let pragma_query = "PRAGMA table_info(Persons)";
+    let mut pragma_stmt = conn.prepare(pragma_query)?;
 
-    let row_iter = stmt.query_map(params![], |row| {
+    let pragma_row_iter = pragma_stmt.query_map(params![], |row| {
         let name = row.get_ref::<&str>("name")?.as_str()?;
         let name = name.to_owned();
         Ok(name)
     })?;
 
     // Create vector of column names.
-    
     let mut col_names = Vec::new();
-    for row in row_iter {
+    for row in pragma_row_iter {
         match row {
             Ok(name) => {
                 col_names.push(name);
@@ -100,11 +102,44 @@ fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
         }
     }
 
-    let header_string
+    // Get max lenghts.
+    let lenght_query = "SELECT MAX(LENGTH(id)), MAX(LENGTH(name)), MAX(LENGTH(age)) FROM Persons";
+    let max_lenghts = conn.query_row(lenght_query, [],|row| {
+        let mut max_lenghts_internal = Vec::new();
+        for i in 0..col_names.len() {
+            let length = match row.get_ref(i)? {
+                rusqlite::types::ValueRef::Null => 0,
+                value_ref => value_ref.as_i64()?,
+            };
+            max_lenghts_internal.push(length);
+        }
+        Ok(max_lenghts_internal)
+    })?;
 
-    for col_name in col_names {
-        print!("{:<6}|", col_name);
-    }
+    // Get the actual columns of the table.
+    let data_query = "SELECT * FROM Persons";
+    let mut data_stmt = conn.prepare(data_query)?;
+
+    // Query data rows
+    let mut data_rows = data_stmt.query(params![])?;
+
+
+    // Iterate over the data rows.
+    // while let Some(row) = data_rows.next()? {
+    //     for col in 0..col_names.len() {
+    //         let len = row.get_ref::<&str>(&col_names[col])?.as_str()?.len();
+    //         if len > max_lenghts[col] {
+    //             max_lenghts[col] = len;
+    //         }
+    //     }
+    // }
+
+    // OUTPUT:
+
+    // Join col_names together for form a header line.
+    
+    let header_string = col_names.join(" | ");
+    println!("{}", header_string);
 
     return Ok(());
 }
