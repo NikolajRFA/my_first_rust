@@ -122,24 +122,23 @@ fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
 
     // Query data rows
     let mut data_rows = data_stmt.query(params![])?;
-
-
+    let mut table_content: String;
     // Iterate over the data rows.
-    // while let Some(row) = data_rows.next()? {
-    //     for col in 0..col_names.len() {
-    //         let len = row.get_ref::<&str>(&col_names[col])?.as_str()?.len();
-    //         if len > max_lenghts[col] {
-    //             max_lenghts[col] = len;
-    //         }
-    //     }
-    // }
+    while let Some(row) = data_rows.next()? {
+
+    }
 
     // OUTPUT:
 
-    // Join col_names together for form a header line.
-    
+    // Join col_names together for form a header line with format.
+    for i in 0..col_names.len() {
+        col_names[i] = format!("{:<width$}", col_names[i], width=max_lenghts[i] as usize);
+    }
+
     let header_string = col_names.join(" | ");
     println!("{}", header_string);
+    // Print line.
+    println!("{:-<width$}", "-", width=header_string.len());
 
     return Ok(());
 }
