@@ -163,17 +163,34 @@ fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
 
     // OUTPUT:
 
+    println!(); // Spacing.
     // Join col_names together for form a header line with format.
     for i in 0..col_names.len() {
         col_names[i] = format!("{:<width$}", col_names[i], width=max_lenghts[i] as usize);
     }
 
     let header_string = col_names.join(" | ");
+    let header_string_col_spacers = find_indexes(&header_string, '|');
     println!("{}", header_string);
     // Print line.
-    println!("{:-<width$}", "-", width=header_string.len());
+    let mut spacer_line = format!("{:-<width$}", "-", width=header_string.len());
+    for space in header_string_col_spacers {
+        spacer_line.replace_range(space..space + 1, "+");
+    }
+    println!("{}", spacer_line);
     // Print table_content
     println!("{}", table_content);
 
-    return Ok(());
+    Ok(())
+}
+
+fn find_indexes(s: &String, c: char) -> Vec<usize> {
+    let mut indexes = Vec::new();
+    let mut pos = 0;
+    while let Some(i) = s[pos..].find(c) {
+        pos += i;
+        indexes.push(pos);
+        pos += 1;
+    }
+    indexes
 }
