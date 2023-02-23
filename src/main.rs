@@ -5,54 +5,57 @@ fn main() {
     env::set_var("RUST_BACKTRACE", "1");
     // Print instructions.
     println!(); // Console spacing.
-    println!("What's your name and age? (Seperated by';')");
-    println!("You can enter multiple persons by seperating with ','!");
-    println!("\nExit the program by typing 'exit'");
 
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).expect("Failed to read line");
+    loop {
+        println!("What's your name and age? (Seperated by';')");
+        println!("You can enter multiple persons by seperating with ','!");
+        println!("\nExit the program by typing 'exit'");
 
-    // Exit program.
-    if input.trim().eq(&String::from("exit")) {
-        process::exit(0);
-    }
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).expect("Failed to read line");
 
-    // Print persons table.
-    if input.trim().eq(&String::from("print persons")) {
-        print_persons_table(&Connection::open("name_database.db").unwrap()).unwrap();
-        process::exit(0);
-    }
-
-    let name_age_sets: Vec<&str> = input.trim().split(",").collect();
-
-    for set in name_age_sets {
-        let name_age: Vec<&str> = set.trim().split(";").collect();
-
-        let name = name_age[0].trim();
-        let age = name_age[1].trim();
-        let age_int: i16 = age.parse().unwrap();
-
-        let conn = Connection::open("name_database.db").unwrap();
-
-        // Check if Persons table exists
-        if !table_exists("Persons", &conn) {
-            // Create Persons table.
-            conn.execute(
-                "CREATE TABLE Persons (
-                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name            TEXT NOT NULL,
-                    age             INTEGER NULL
-                    )",
-                params![],
-            )
-            .unwrap();
+        // Exit program.
+        if input.trim().eq(&String::from("exit")) {
+            process::exit(0);
         }
 
-        // Insert person into table.
-        if insert_person(&conn, name, age_int) {
-            println!("{} was inserted!", name);
-        } else {
-            println!("Something went wrong while inserting {}!", name);
+        // Print persons table.
+        if input.trim().eq(&String::from("print persons")) {
+            print_persons_table(&Connection::open("name_database.db").unwrap()).unwrap();
+            continue;
+        }
+
+        let name_age_sets: Vec<&str> = input.trim().split(",").collect();
+
+        for set in name_age_sets {
+            let name_age: Vec<&str> = set.trim().split(";").collect();
+
+            let name = name_age[0].trim();
+            let age = name_age[1].trim();
+            let age_int: i16 = age.parse().unwrap();
+
+            let conn = Connection::open("name_database.db").unwrap();
+
+            // Check if Persons table exists
+            if !table_exists("Persons", &conn) {
+                // Create Persons table.
+                conn.execute(
+                    "CREATE TABLE Persons (
+                        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name            TEXT NOT NULL,
+                        age             INTEGER NULL
+                        )",
+                    params![],
+                )
+                .unwrap();
+            }
+
+            // Insert person into table.
+            if insert_person(&conn, name, age_int) {
+                println!("{} was inserted!", name);
+            } else {
+                println!("Something went wrong while inserting {}!", name);
+            }
         }
     }
 }
