@@ -11,6 +11,7 @@ fn main() {
         println!("You can enter multiple persons by seperating with ','!");
         println!("\nExit the program by typing 'exit'");
 
+        // TODO: Handle invalid input.
         let mut input = String::new();
         io::stdin().read_line(&mut input).expect("Failed to read line");
 
@@ -22,6 +23,28 @@ fn main() {
         // Print persons table.
         if input.trim().eq(&String::from("print persons")) {
             print_persons_table(&Connection::open("name_database.db").unwrap()).unwrap();
+            continue;
+        }
+
+        if input.trim().eq(&String::from("get person with id")) {
+            // TODO: Add handling for invalid input.
+            println!("Enter id:");
+            let mut person_id = String::new();
+            io::stdin().read_line(&mut person_id).expect("Failed to read line");
+
+            // Get person.
+            let person = Person::get_person_from_id(person_id.trim().parse().unwrap(), &Connection::open("name_database.db").unwrap());
+
+            // Print person details.
+            println!(
+                "Person with id: {} has name {} and age {}",
+                person.id,
+                person.name,
+                person.age
+            );
+            println!(); // Extra spacing.
+
+            // Continue next run of loop.
             continue;
         }
 
@@ -196,4 +219,28 @@ fn find_indexes(s: &String, c: char) -> Vec<usize> {
         pos += 1;
     }
     indexes
+}
+
+#[derive(Debug)]
+struct Person {
+    id: i64,
+    name: String,
+    age: i16,
+}
+
+impl Person {
+    fn get_person_from_id(id: i64, conn: &Connection) -> Self {
+        // Retrieve data from SQL.
+        let sql: &str = "SELECT * FROM Persons WHERE id = ?";
+        let person = conn.query_row(sql, params![id], |row| {
+            let person = Person {
+                id: row.get("id")?,
+                name: row.get("name")?,
+                age: row.get("age")?,
+            };
+            Ok(person)
+        }).unwrap();
+        // Create and retrun Person struct.
+        person
+    }
 }
