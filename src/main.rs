@@ -1,3 +1,4 @@
+// TODO: Modulize program.
 use rusqlite::{params, Connection, types::{Type}};
 use std::{io, process, env};
 
