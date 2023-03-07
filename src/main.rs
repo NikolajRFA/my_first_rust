@@ -1,6 +1,6 @@
 // TODO: Modulize program.
 use rusqlite::{params, Connection, types::{Type}};
-use std::{io, process, env};
+use std::{io, process, env, any::{Any, TypeId}};
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
@@ -34,8 +34,10 @@ fn main() {
             io::stdin().read_line(&mut person_id).expect("Failed to read line");
 
             // Get person.
-            let person = Person::get_person_from_id(person_id.trim().parse().unwrap(), &Connection::open("name_database.db").unwrap());
+            let conn = Connection::open("name_database.db").unwrap();
+            let person = Person::get_person_from_id(person_id.trim().parse().unwrap(), &conn).unwrap();
 
+            
             // Print person details.
             println!(
                 "Person with id: {} has name {} and age {}",
@@ -43,6 +45,14 @@ fn main() {
                 person.name,
                 person.age
             );
+
+            match Occupation::get_occupation_from_person(&person, &conn) {
+                None => println!("Person has no occupation."),
+                Some(occupation) => {
+                    println!("Person has trade {}", occupation.trade);
+                }
+            }
+
             println!(); // Extra spacing.
 
             // Continue next run of loop.
@@ -230,9 +240,9 @@ struct Person {
 }
 
 impl Person {
-    fn get_person_from_id(id: i64, conn: &Connection) -> Self {
+    fn get_person_from_id(id: i64, conn: &Connection) -> Option<Self> {
         // Retrieve data from SQL.
-        let sql: &str = "SELECT * FROM Persons WHERE id = ?";
+        let sql = "SELECT * FROM Persons WHERE id = ?";
         let person = conn.query_row(sql, params![id], |row| {
             let person = Person {
                 id: row.get("id")?,
@@ -242,6 +252,35 @@ impl Person {
             Ok(person)
         }).unwrap();
         // Create and retrun Person struct.
-        person
+        if person.type_id() == TypeId::of::<Person>() {
+            Some(person)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Occupation {
+    id: i64,
+    trade: String,
+}
+
+impl Occupation {
+    fn get_occupation_from_person(person: &Person, conn: &Connection) -> Option<Self> {
+        let sql = "SELECT * FROM Occupation WHERE id = ?";
+        let occupation = conn.query_row(sql, params![person.id], |row| {
+            let occupation = Occupation {
+                id: row.get("id")?,
+                trade: row.get("trade")?,
+            };
+            Ok(occupation)
+        }).unwrap();
+        // Return
+        if occupation.type_id() == TypeId::of::<Occupation>() {
+            Some(occupation)
+        } else {
+            None
+        }
     }
 }
