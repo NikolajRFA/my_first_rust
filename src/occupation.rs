@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection, types::Type};
+use rusqlite::{params, Connection};
 use std::any::{Any, TypeId};
 use crate::person::Person;
 
