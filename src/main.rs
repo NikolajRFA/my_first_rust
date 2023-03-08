@@ -1,6 +1,10 @@
 // TODO: Modulize program.
-use rusqlite::{params, Connection, types::{Type}};
-use std::{io, process, env, any::{Any, TypeId}};
+mod person;
+mod occupation;
+
+use rusqlite::{params, Connection, types::Type};
+use std::{io, process, env};
+use crate::{person::Person, occupation::Occupation};
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
@@ -8,7 +12,7 @@ fn main() {
     println!(); // Console spacing.
 
     loop {
-        println!("What's your name and age? (Seperated by';')");
+        println!("What's your name and age? (Seperated by ';')");
         println!("You can enter multiple persons by seperating with ','!");
         println!("\nExit the program by typing 'exit'");
 
@@ -140,7 +144,7 @@ fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
     }
 
     // Get max lenghts.
-    let lenght_query = "SELECT MAX(LENGTH(id)), MAX(LENGTH(name)), MAX(LENGTH(age)) FROM Persons";
+    let lenght_query = "SELECT MAX(LENGTH(id)), MAX(LENGTH(name)), MAX(LENGTH(age)), MAX(LENGTH(occupationId)) FROM Persons";
     let max_lenghts = conn.query_row(lenght_query, [],|row| {
         let mut max_lenghts_internal = Vec::new();
         for i in 0..col_names.len() {
@@ -230,57 +234,4 @@ fn find_indexes(s: &String, c: char) -> Vec<usize> {
         pos += 1;
     }
     indexes
-}
-
-#[derive(Debug)]
-struct Person {
-    id: i64,
-    name: String,
-    age: i16,
-}
-
-impl Person {
-    fn get_person_from_id(id: i64, conn: &Connection) -> Option<Self> {
-        // Retrieve data from SQL.
-        let sql = "SELECT * FROM Persons WHERE id = ?";
-        let person = conn.query_row(sql, params![id], |row| {
-            let person = Person {
-                id: row.get("id")?,
-                name: row.get("name")?,
-                age: row.get("age")?,
-            };
-            Ok(person)
-        }).unwrap();
-        // Create and retrun Person struct.
-        if person.type_id() == TypeId::of::<Person>() {
-            Some(person)
-        } else {
-            None
-        }
-    }
-}
-
-#[derive(Debug)]
-struct Occupation {
-    id: i64,
-    trade: String,
-}
-
-impl Occupation {
-    fn get_occupation_from_person(person: &Person, conn: &Connection) -> Option<Self> {
-        let sql = "SELECT * FROM Occupation WHERE id = ?";
-        let occupation = conn.query_row(sql, params![person.id], |row| {
-            let occupation = Occupation {
-                id: row.get("id")?,
-                trade: row.get("trade")?,
-            };
-            Ok(occupation)
-        }).unwrap();
-        // Return
-        if occupation.type_id() == TypeId::of::<Occupation>() {
-            Some(occupation)
-        } else {
-            None
-        }
-    }
 }
