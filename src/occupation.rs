@@ -16,7 +16,7 @@ impl Occupation {
                 trade: row.get("trade")?,
             };
             Ok(occupation)
-        }).optional().unwrap();
+        }).optional().unwrap_or(None);
         // Return
         occupation
     }
