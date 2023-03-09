@@ -1,5 +1,4 @@
-use rusqlite::{params, Connection};
-use std::any::{Any, TypeId};
+use rusqlite::{params, Connection, OptionalExtension};
 use crate::person::Person;
 
 #[derive(Debug)]
@@ -10,19 +9,15 @@ pub struct Occupation {
 
 impl Occupation {
     pub fn get_occupation_from_person(person: &Person, conn: &Connection) -> Option<Self> {
-        let sql = "SELECT * FROM Occupation WHERE id = ?";
+        let sql = "SELECT * FROM Occupations WHERE id = ?";
         let occupation = conn.query_row(sql, params![person.occupation_id], |row| {
             let occupation = Occupation {
                 id: row.get("id")?,
                 trade: row.get("trade")?,
             };
             Ok(occupation)
-        }).unwrap();
+        }).optional().unwrap();
         // Return
-        if occupation.type_id() == TypeId::of::<Occupation>() {
-            Some(occupation)
-        } else {
-            None
-        }
+        occupation
     }
 }

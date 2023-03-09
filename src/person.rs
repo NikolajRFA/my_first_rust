@@ -6,7 +6,7 @@ pub struct Person {
     pub id: i64,
     pub name: String,
     pub age: i16,
-    pub occupation_id: i16,
+    pub occupation_id: Option<i16>,
 }
 
 impl Person {
