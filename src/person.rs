@@ -1,5 +1,4 @@
-use rusqlite::{params, Connection};
-use std::{any::{Any, TypeId}};
+use rusqlite::{params, Connection, OptionalExtension};
 
 #[derive(Debug)]
 pub struct Person {
@@ -21,12 +20,8 @@ impl Person {
                 occupation_id: row.get("occupationId")?,
             };
             Ok(person)
-        }).unwrap();
+        }).optional().unwrap_or(None);
         // Create and retrun Person struct.
-        if person.type_id() == TypeId::of::<Person>() {
-            Some(person)
-        } else {
-            None
-        }
+        person
     }
 }
