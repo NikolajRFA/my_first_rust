@@ -8,18 +8,6 @@ pub fn table_exists(name: &str, conn: &Connection) -> bool {
         .unwrap();
 }
 
-pub fn insert_person(conn: &Connection, name: &str, age: i16) -> bool {
-    let sql: &str = "INSERT INTO Persons (name, age) VALUES (?1, ?2)";
-
-    match conn.execute(sql, params![name, age]) {
-        Ok(_) => return true,
-        Err(err) => {
-            println!("Insert failed!\nError msg: {}", err);
-            return false;
-        }
-    }
-}
-
 pub fn print_persons_table(conn: &Connection) -> Result<(), rusqlite::Error> {
     // TODO: Once done do abstraction of function to be generic.
     // Query pragma table info.

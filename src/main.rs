@@ -1,10 +1,11 @@
 mod person;
 mod occupation;
 mod functions;
+mod tests;
 
 use rusqlite::{params, Connection};
 use std::{io, process, env};
-use crate::{person::Person, occupation::Occupation, functions::{table_exists, insert_person, print_persons_table}};
+use crate::{person::Person, occupation::Occupation, functions::{table_exists, print_persons_table}};
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
@@ -39,7 +40,7 @@ fn main() {
 
             // Get person.
             let conn = Connection::open("name_database.db").unwrap();
-            let person = Person::get_person_from_id(person_id.trim().parse().unwrap(), &conn).unwrap();
+            let person = Person::get_from_id(person_id.trim().parse().unwrap(), &conn).unwrap();
 
             
             // Print person details.
@@ -74,22 +75,8 @@ fn main() {
 
             let conn = Connection::open("name_database.db").unwrap();
 
-            // Check if Persons table exists
-            if !table_exists("Persons", &conn) {
-                // Create Persons table.
-                conn.execute(
-                    "CREATE TABLE Persons (
-                        id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name            TEXT NOT NULL,
-                        age             INTEGER NULL
-                        )",
-                    params![],
-                )
-                .unwrap();
-            }
-
             // Insert person into table.
-            if insert_person(&conn, name, age_int) {
+            if Person::insert_person(&conn, name, age_int) {
                 println!("{} was inserted!", name);
             } else {
                 println!("Something went wrong while inserting {}!", name);
