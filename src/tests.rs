@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use rusqlite::{params, Connection};
+    use rusqlite::{Connection};
     use crate::{person::{Person}};
     
     #[test]

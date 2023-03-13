@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{params, Connection, types::Type};
 use crate::functions::table_exists;
 
 #[derive(Debug)]
@@ -14,15 +14,27 @@ impl Person {
     pub fn get_from_id(id: i64, conn: &Connection) -> Option<Self> {
         // Retrieve data from SQL.
         let sql = "SELECT * FROM Persons WHERE id = ?";
-        let person = conn.query_row(sql, params![id], |row| {
-            let person = Person {
-                id: row.get("id")?,
-                name: row.get("name")?,
-                age: row.get("age")?,
-                occupation_id: row.get("occupationId")?,
+        let person: Option<Person> = conn.query_row(sql, params![id], |row| {
+            let id = row.get("id")?;
+            let name = row.get("name")?;
+            let age = row.get("age")?;
+
+            // Assign occupation_id.
+            let occupation_id_value_ref = row.get_ref_unwrap("occupationId");
+            let occupation_id: Option<i16> = match occupation_id_value_ref.data_type() {
+                Type::Integer => Some(occupation_id_value_ref.as_i64()?.try_into().unwrap()),
+                Type::Null | Type::Blob | Type::Real |Type::Text => None,
             };
-            Ok(person)
-        }).optional().unwrap_or(None);
+
+            // Create returned person.
+            let person = Person {
+                id,
+                name,
+                age,
+                occupation_id,
+            };
+            Ok(Some(person))
+        }).unwrap_or(None);
         // Create and retrun Person struct.
         person
     }
@@ -63,7 +75,8 @@ fn create_persons_table(conn: &Connection) {
             "CREATE TABLE Persons (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 name            TEXT NOT NULL,
-                age             INTEGER NULL
+                age             INTEGER NULL,
+                occupationId    INTEGER NULL
                 )",
             params![],
         )

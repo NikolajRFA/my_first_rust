@@ -3,9 +3,9 @@ mod occupation;
 mod functions;
 mod tests;
 
-use rusqlite::{params, Connection};
+use rusqlite::{Connection};
 use std::{io, process, env};
-use crate::{person::Person, occupation::Occupation, functions::{table_exists, print_persons_table}};
+use crate::{person::Person, occupation::Occupation, functions::{print_persons_table}};
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
